@@ -1,26 +1,17 @@
 require("dotenv").config();
 
-const express = require("express");
 const mongoose = require("mongoose");
-const workoutRoutes = require("./routes/workouts");
-
-//express app
-const app = express();
-
-// middleware
-app.use(express.json());
-
-app.use((req, res, next) => {
-  console.log(req.path, req.method);
-  next();
-});
-
-// routes
-app.use("/api/workouts", workoutRoutes);
+const app = require("./app");
+const { seedExercises, migrateLegacyWorkouts } = require("./utils/seed");
 
 // connect to db
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
+    const added = await seedExercises();
+    if (added) console.log(`Seeded ${added} exercises`);
+    const migrated = await migrateLegacyWorkouts();
+    if (migrated) console.log(`Migrated ${migrated} legacy workouts`);
+
     // listen for requests
     app.listen(process.env.PORT, () => {
       console.log("Connected to db & listening on port", process.env.PORT);
